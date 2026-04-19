@@ -2,6 +2,11 @@
 -- Salary Transparency Platform - Seed Data for Development
 -- ============================================================
 
+INSERT INTO identity.users (id, username, email, password_hash, role, created_at) VALUES
+    ('10000000-0000-0000-0000-000000000001', 'johndoe', 'john@example.com', '$2b$12$ogtQX/Ogk6GQyi4oK8J1je4WQEJimOW6b16Cykz.dQxqqlxMuK8XK', 'USER', '2025-01-01 09:00:00'),
+    ('10000000-0000-0000-0000-000000000002', 'janesmith', 'jane@example.com', '$2b$12$ogtQX/Ogk6GQyi4oK8J1je4WQEJimOW6b16Cykz.dQxqqlxMuK8XK', 'USER', '2025-01-01 09:05:00'),
+    ('10000000-0000-0000-0000-000000000003', 'devuser', 'dev@example.com', '$2b$12$ogtQX/Ogk6GQyi4oK8J1je4WQEJimOW6b16Cykz.dQxqqlxMuK8XK', 'ADMIN', '2025-01-01 09:10:00')
+ON CONFLICT DO NOTHING;
 
 -- Salary submissions with mixed statuses
 INSERT INTO salary.submissions (id, job_title, company, country, city, experience_level, years_of_experience, base_salary, currency, employment_type, anonymize, status, tech_stack, submitted_at) VALUES
@@ -22,4 +27,11 @@ INSERT INTO salary.submissions (id, job_title, company, country, city, experienc
 
     -- Freelance entries
     ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'Freelance Developer', 'Self-employed', 'America', 'New York', 'SENIOR', 7, 45000.00, 'USD', 'FREELANCE', true, 'APPROVED', 'React, Node.js, AWS', '2025-04-08 10:00:00')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO community.votes (id, submission_id, voter_user_id, vote_type, created_at) VALUES
+    ('20000000-0000-0000-0000-000000000001', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '10000000-0000-0000-0000-000000000001', 'UPVOTE', '2025-04-14 11:00:00'),
+    ('20000000-0000-0000-0000-000000000002', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '10000000-0000-0000-0000-000000000002', 'UPVOTE', '2025-04-14 11:15:00'),
+    ('20000000-0000-0000-0000-000000000003', 'cccccccc-cccc-cccc-cccc-cccccccccccc', '10000000-0000-0000-0000-000000000001', 'UPVOTE', '2025-04-15 12:00:00'),
+    ('20000000-0000-0000-0000-000000000004', 'dddddddd-dddd-dddd-dddd-dddddddddddd', '10000000-0000-0000-0000-000000000003', 'DOWNVOTE', '2025-04-16 12:00:00')
 ON CONFLICT DO NOTHING;
