@@ -4,20 +4,37 @@ import { api } from "../api";
 const initialFilters = {
   country: "",
   company: "",
-  jobTitle: "",
+  role: "",
   techStack: "",
   minSalary: "",
   maxSalary: "",
   sortBy: "submittedAt",
-  sortDirection: "desc",
+  sortDir: "desc",
   page: 0,
   size: 10,
 };
 
+async function fetchVoteCounts(results) {
+  const settled = await Promise.allSettled(
+    results.map((item) =>
+      api.getVoteCounts(item.id).then((counts) => [item.id, counts])
+    )
+  );
+  const map = {};
+  settled.forEach((r) => {
+    if (r.status === "fulfilled") {
+      const [id, counts] = r.value;
+      map[id] = { upvotes: counts.upvotes ?? 0, downvotes: counts.downvotes ?? 0 };
+    }
+  });
+  return map;
+}
+
 function SearchPage({ token }) {
   const [filters, setFilters] = useState(initialFilters);
   const [options, setOptions] = useState({ countries: [], companies: [], jobTitles: [] });
-  const [results, setResults] = useState({ content: [], totalElements: 0, totalPages: 0 });
+  const [results, setResults] = useState({ results: [], totalElements: 0, totalPages: 0 });
+  const [voteCounts, setVoteCounts] = useState({});
   const [message, setMessage] = useState("");
 
   const load = async (nextFilters = filters) => {
@@ -25,6 +42,8 @@ function SearchPage({ token }) {
       const response = await api.search(nextFilters);
       setResults(response);
       setMessage("");
+      const counts = await fetchVoteCounts(response.results ?? []);
+      setVoteCounts(counts);
     } catch (error) {
       setMessage(error.message);
     }
@@ -32,13 +51,8 @@ function SearchPage({ token }) {
 
   useEffect(() => {
     api.searchFilters().then(setOptions).catch(() => undefined);
-    api.search(initialFilters)
-      .then((response) => {
-        setResults(response);
-        setMessage("");
-      })
-      .catch((error) => setMessage(error.message));
-  }, []);
+    load(initialFilters);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const update = (event) => {
     const nextFilters = { ...filters, [event.target.name]: event.target.value, page: 0 };
@@ -57,7 +71,11 @@ function SearchPage({ token }) {
     }
     try {
       await api.vote({ submissionId, voteType }, token);
-      setMessage(`Vote recorded: ${voteType}`);
+      const counts = await api.getVoteCounts(submissionId);
+      setVoteCounts((prev) => ({
+        ...prev,
+        [submissionId]: { upvotes: counts.upvotes ?? 0, downvotes: counts.downvotes ?? 0 },
+      }));
     } catch (error) {
       setMessage(error.message);
     }
@@ -87,7 +105,7 @@ function SearchPage({ token }) {
         </label>
         <label>
           Job title
-          <input list="jobTitles" name="jobTitle" value={filters.jobTitle} onChange={update} />
+          <input list="jobTitles" name="role" value={filters.role} onChange={update} />
           <datalist id="jobTitles">
             {options.jobTitles?.map((value) => <option key={value} value={value} />)}
           </datalist>
@@ -114,7 +132,7 @@ function SearchPage({ token }) {
       </div>
 
       <div className="card-list">
-        {results.content?.map((item) => (
+        {results.results?.map((item) => (
           <article className="result-card" key={item.id}>
             <div className="result-top">
               <div>
@@ -126,8 +144,22 @@ function SearchPage({ token }) {
             <p className="muted">{item.experienceLevel} • {item.yearsOfExperience} years • {item.employmentType}</p>
             <p>{item.techStack || "Tech stack not specified"}</p>
             <div className="vote-row">
-              <button type="button" onClick={() => castVote(item.id, "UPVOTE")}>Upvote</button>
-              <button type="button" onClick={() => castVote(item.id, "DOWNVOTE")}>Downvote</button>
+              <button
+                type="button"
+                className="vote-btn vote-btn-up"
+                onClick={() => castVote(item.id, "UPVOTE")}
+                title="Upvote"
+              >
+                ▲ {voteCounts[item.id]?.upvotes ?? 0}
+              </button>
+              <button
+                type="button"
+                className="vote-btn vote-btn-down"
+                onClick={() => castVote(item.id, "DOWNVOTE")}
+                title="Downvote"
+              >
+                ▼ {voteCounts[item.id]?.downvotes ?? 0}
+              </button>
             </div>
           </article>
         ))}

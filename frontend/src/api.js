@@ -67,4 +67,7 @@ export const api = {
       body: JSON.stringify(payload),
     });
   },
+  getVoteCounts(submissionId) {
+    return request(`/api/votes/submission/${submissionId}`);
+  },
 };

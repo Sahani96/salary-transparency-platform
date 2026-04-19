@@ -3,6 +3,8 @@ package com.example.identityservice.auth;
 import com.example.identityservice.user.User;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +21,8 @@ import java.util.UUID;
 
 @Service
 public class JwtService {
+
+    private static final Logger logger = LoggerFactory.getLogger(JwtService.class);
 
     private final ObjectMapper objectMapper;
     private final byte[] secret;
@@ -88,6 +92,7 @@ public class JwtService {
                     payload.get("email").toString()
             );
         } catch (Exception exception) {
+            logger.debug("Token validation failed: {}", exception.getMessage());
             return new AuthDtos.TokenValidationResponse(false, null, null, null);
         }
     }

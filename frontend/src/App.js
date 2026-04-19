@@ -7,7 +7,6 @@ import StatsPage from "./pages/StatsPage";
 import SubmitSalaryPage from "./pages/SubmitSalaryPage";
 
 const routes = {
-  "#/login": "login",
   "#/submit": "submit",
   "#/stats": "stats",
   "#/search": "search",
@@ -34,9 +33,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!session?.token) {
-      return;
-    }
+    if (!session?.token) return;
     api.validate(session.token).catch(() => {
       setSession(null);
       window.localStorage.removeItem("salary-platform-session");
@@ -52,54 +49,52 @@ function App() {
     };
     setSession(nextSession);
     window.localStorage.setItem("salary-platform-session", JSON.stringify(nextSession));
-    window.location.hash = "#/submit";
+    window.location.hash = "#/search";
   };
 
   const logout = () => {
     setSession(null);
     window.localStorage.removeItem("salary-platform-session");
-    window.location.hash = "#/search";
   };
 
-  return (
-    <div className="shell">
-      <aside className="sidebar">
-        <div>
+  if (!session) {
+    return (
+      <div className="login-shell">
+        <div className="login-brand">
           <p className="eyebrow">Cloud Computing Coursework</p>
           <h1>Tech Salary Transparency Platform</h1>
           <p className="intro">
             Anonymous salary submissions, searchable approved records, and community-visible salary patterns for the tech industry.
           </p>
         </div>
+        <LoginPage onAuthenticated={handleAuthenticated} />
+      </div>
+    );
+  }
 
+  return (
+    <div className="shell">
+      <header className="topbar">
+        <span className="topbar-brand">Tech Salary Transparency Platform</span>
+        <div className="topbar-session">
+          <strong>{session.username}</strong>
+          <span>{session.email}</span>
+          <button type="button" onClick={logout}>Log out</button>
+        </div>
+      </header>
+
+      <aside className="sidebar">
         <nav className="nav">
           <a href="#/search" className={route === "search" ? "active" : ""}>Search</a>
           <a href="#/stats" className={route === "stats" ? "active" : ""}>Statistics</a>
           <a href="#/submit" className={route === "submit" ? "active" : ""}>Submit Salary</a>
-          <a href="#/login" className={route === "login" ? "active" : ""}>{session ? "Account" : "Login / Signup"}</a>
         </nav>
-
-        <div className="session-card">
-          {session ? (
-            <>
-              <strong>{session.username}</strong>
-              <span>{session.email}</span>
-              <button type="button" onClick={logout}>Log out</button>
-            </>
-          ) : (
-            <>
-              <strong>Guest mode</strong>
-              <span>Search and stats are public. Voting requires a signed-in account.</span>
-            </>
-          )}
-        </div>
       </aside>
 
       <main className="content">
-        {route === "login" && <LoginPage session={session} onAuthenticated={handleAuthenticated} onLogout={logout} />}
-        {route === "submit" && <SubmitSalaryPage />}
+        {route === "submit" && <SubmitSalaryPage token={session.token} />}
         {route === "stats" && <StatsPage />}
-        {route === "search" && <SearchPage token={session?.token} />}
+        {route === "search" && <SearchPage token={session.token} />}
       </main>
     </div>
   );

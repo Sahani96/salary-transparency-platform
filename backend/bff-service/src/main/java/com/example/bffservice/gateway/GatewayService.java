@@ -1,6 +1,8 @@
 package com.example.bffservice.gateway;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -16,6 +18,8 @@ import java.util.Map;
 
 @Service
 public class GatewayService {
+
+    private static final Logger logger = LoggerFactory.getLogger(GatewayService.class);
 
     private final HttpClient client;
     private final ObjectMapper objectMapper;
@@ -99,15 +103,25 @@ public class GatewayService {
             };
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            return ResponseEntity.status(HttpStatus.valueOf(response.statusCode()))
+            int status = response.statusCode();
+            if (status >= 500) {
+                logger.error("{} {} -> upstream returned {}: {}", method, url, status, response.body());
+            } else if (status >= 400) {
+                logger.warn("{} {} -> upstream returned {}: {}", method, url, status, response.body());
+            } else {
+                logger.debug("{} {} -> {}", method, url, status);
+            }
+            return ResponseEntity.status(HttpStatus.valueOf(status))
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(response.body());
         } catch (IOException exception) {
+            logger.error("{} {} -> I/O error: {}", method, url, exception.getMessage(), exception);
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body("{\"message\":\"Gateway I/O error\"}");
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
+            logger.error("{} {} -> request interrupted", method, url, exception);
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body("{\"message\":\"Gateway request interrupted\"}");

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api } from "../api";
 
-function LoginPage({ session, onAuthenticated, onLogout }) {
+function LoginPage({ onAuthenticated }) {
   const [mode, setMode] = useState("login");
   const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [message, setMessage] = useState("");
@@ -13,6 +13,10 @@ function LoginPage({ session, onAuthenticated, onLogout }) {
 
   const submit = async (event) => {
     event.preventDefault();
+    if (mode === "signup" && form.password.length < 8) {
+      setMessage("Password must be at least 8 characters.");
+      return;
+    }
     setLoading(true);
     setMessage("");
     try {
@@ -25,19 +29,6 @@ function LoginPage({ session, onAuthenticated, onLogout }) {
       setLoading(false);
     }
   };
-
-  if (session) {
-    return (
-      <section className="panel">
-        <div className="panel-heading">
-          <p className="eyebrow">Account</p>
-          <h2>Signed in as {session.username}</h2>
-        </div>
-        <p className="muted">{session.email}</p>
-        <button type="button" onClick={onLogout}>Log out</button>
-      </section>
-    );
-  }
 
   return (
     <section className="panel">
@@ -64,7 +55,7 @@ function LoginPage({ session, onAuthenticated, onLogout }) {
         )}
         <label>
           Password
-          <input name="password" type="password" value={form.password} onChange={updateField} required />
+          <input name="password" type="password" value={form.password} onChange={updateField} required minLength={mode === "signup" ? 8 : undefined} />
         </label>
         <button type="submit" disabled={loading}>{loading ? "Working..." : mode === "login" ? "Log in" : "Create account"}</button>
       </form>

@@ -2,6 +2,8 @@ package com.example.bffservice.security;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +17,8 @@ import java.util.UUID;
 
 @Service
 public class JwtService {
+
+    private static final Logger logger = LoggerFactory.getLogger(JwtService.class);
 
     public record TokenPrincipal(boolean valid, UUID userId, String username, String email) {
     }
@@ -61,6 +65,7 @@ public class JwtService {
                     payload.get("email").toString()
             );
         } catch (Exception exception) {
+            logger.debug("Token validation failed: {}", exception.getMessage());
             return new TokenPrincipal(false, null, null, null);
         }
     }

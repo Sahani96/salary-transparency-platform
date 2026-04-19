@@ -31,6 +31,7 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON identity.users(email);
 -- SALARY SCHEMA - Submissions and approved records
 -- No personal identity information (email) stored here
 -- ============================================================
+DROP TABLE IF EXISTS salary.submissions;
 
 CREATE TABLE IF NOT EXISTS salary.submissions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

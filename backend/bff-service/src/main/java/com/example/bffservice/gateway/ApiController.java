@@ -52,7 +52,7 @@ public class ApiController {
 
     @PostMapping("/salaries")
     public ResponseEntity<String> createSalary(@RequestBody Map<String, Object> body) {
-        return gatewayService.post(gatewayService.salaryServiceUrl() + "/submissions", body, null);
+        return gatewayService.post(gatewayService.salaryServiceUrl() + "/api/salaries", body, null);
     }
 
     @GetMapping("/salaries/{id}")
