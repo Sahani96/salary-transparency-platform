@@ -26,6 +26,9 @@ replay_pid*
 node_modules/
 dist/
 build/
+target/
+.idea/
+*.iml
 
 # Test outputs
 playwright-report/
