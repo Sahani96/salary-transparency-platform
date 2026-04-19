@@ -3,14 +3,28 @@
 -- PostgreSQL schema setup with logical separation
 -- ============================================================
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- Create schemas
+CREATE SCHEMA IF NOT EXISTS identity;
 CREATE SCHEMA IF NOT EXISTS salary;
+CREATE SCHEMA IF NOT EXISTS community;
 
 -- ============================================================
 -- IDENTITY SCHEMA - User accounts and authentication
 -- ============================================================
 
--- need to implement here
+CREATE TABLE IF NOT EXISTS identity.users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(20) NOT NULL DEFAULT 'USER' CHECK (role IN ('USER', 'ADMIN')),
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_username ON identity.users(username);
+CREATE INDEX IF NOT EXISTS idx_users_email ON identity.users(email);
 
 
 -- ============================================================
@@ -45,4 +59,14 @@ CREATE INDEX IF NOT EXISTS idx_submissions_job_title ON salary.submissions(job_t
 -- COMMUNITY SCHEMA - Votes and community actions
 -- ============================================================
 
--- need to implement here
+CREATE TABLE IF NOT EXISTS community.votes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    submission_id UUID NOT NULL REFERENCES salary.submissions(id) ON DELETE CASCADE,
+    voter_user_id UUID NOT NULL REFERENCES identity.users(id) ON DELETE CASCADE,
+    vote_type VARCHAR(20) NOT NULL CHECK (vote_type IN ('UPVOTE', 'DOWNVOTE')),
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT uk_votes_submission_user UNIQUE (submission_id, voter_user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_votes_submission_id ON community.votes(submission_id);
+CREATE INDEX IF NOT EXISTS idx_votes_voter_user_id ON community.votes(voter_user_id);
