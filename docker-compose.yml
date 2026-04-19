@@ -1,0 +1,164 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: salarydb
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d salarydb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  identity-service:
+    build:
+      context: ./backend/identity-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/salarydb?currentSchema=identity
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin123
+      JWT_SECRET: local-dev-secret-for-docker-compose-only
+      JWT_EXPIRATION: 86400000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: rebuild
+          path: ./backend/identity-service/src
+        - action: rebuild
+          path: ./backend/identity-service/pom.xml
+
+  salary-service:
+    build:
+      context: ./backend/salary-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/salarydb?currentSchema=salary
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin123
+    depends_on:
+      postgres:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: rebuild
+          path: ./backend/salary-service/src
+        - action: rebuild
+          path: ./backend/salary-service/pom.xml
+
+  vote-service:
+    build:
+      context: ./backend/vote-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/salarydb?currentSchema=community
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin123
+      SALARY_SERVICE_URL: http://salary-service:8082
+      VOTE_THRESHOLD: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
+      salary-service:
+        condition: service_started
+    develop:
+      watch:
+        - action: rebuild
+          path: ./backend/vote-service/src
+        - action: rebuild
+          path: ./backend/vote-service/pom.xml
+
+  search-service:
+    build:
+      context: ./backend/search-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/salarydb?currentSchema=salary
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin123
+    depends_on:
+      postgres:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: rebuild
+          path: ./backend/search-service/src
+        - action: rebuild
+          path: ./backend/search-service/pom.xml
+
+  stats-service:
+    build:
+      context: ./backend/stats-service
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/salarydb?currentSchema=salary
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin123
+    depends_on:
+      postgres:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: rebuild
+          path: ./backend/stats-service/src
+        - action: rebuild
+          path: ./backend/stats-service/pom.xml
+
+  bff-service:
+    build:
+      context: ./backend/bff-service
+    ports:
+      - "8080:8080"
+    environment:
+      IDENTITY_SERVICE_URL: http://identity-service:8081
+      SALARY_SERVICE_URL: http://salary-service:8082
+      VOTE_SERVICE_URL: http://vote-service:8083
+      SEARCH_SERVICE_URL: http://search-service:8084
+      STATS_SERVICE_URL: http://stats-service:8085
+      JWT_SECRET: local-dev-secret-for-docker-compose-only
+      CORS_ALLOWED_ORIGINS: http://localhost:3000
+    depends_on:
+      - identity-service
+      - salary-service
+      - vote-service
+      - search-service
+      - stats-service
+    develop:
+      watch:
+        - action: rebuild
+          path: ./backend/bff-service/src
+        - action: rebuild
+          path: ./backend/bff-service/pom.xml
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - bff-service
+    develop:
+      watch:
+        - action: rebuild
+          path: ./frontend/src
+        - action: rebuild
+          path: ./frontend/public
+
+volumes:
+  postgres-data:
