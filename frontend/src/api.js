@@ -60,6 +60,12 @@ export const api = {
   statsByCountry() {
     return request("/api/stats/by-country");
   },
+  statsByCompany() {
+    return request("/api/stats/by-company");
+  },
+  statsByLevel() {
+    return request("/api/stats/by-level");
+  },
   vote(payload, token) {
     return request("/api/votes", {
       method: "POST",
