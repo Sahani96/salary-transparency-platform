@@ -116,6 +116,11 @@ function SearchPage({ token }) {
   const { page, size } = filters;
   const { totalElements, totalPages } = results;
 
+  // Guests only see APPROVED records; logged-in users see everything.
+  const visibleResults = isLoggedIn
+    ? (results.results ?? [])
+    : (results.results ?? []).filter((item) => !item.status || item.status === "APPROVED");
+
   return (
     <section className="panel">
       <div className="panel-heading">
@@ -124,7 +129,7 @@ function SearchPage({ token }) {
         </h2>
         {isLoggedIn && (
           <p className="search-scope-note">
-            You are logged in — showing both <span className="badge-approved">Approved</span> and <span className="badge-pending">Pending</span> records.
+            You are logged in — showing both Approved and Pending records.
           </p>
         )}
       </div>
@@ -216,7 +221,7 @@ function SearchPage({ token }) {
 
       <div className="results-header">
         <strong>
-          {loading ? "Searching…" : `${totalElements.toLocaleString()} matching records`}
+          {loading ? "Searching\u2026" : `${visibleResults.length.toLocaleString()} matching records`}
         </strong>
         {totalPages > 1 && (
           <span className="page-indicator">
@@ -227,7 +232,7 @@ function SearchPage({ token }) {
 
       {!loading && (
         <div className="card-list">
-          {results.results?.map((item) => (
+          {visibleResults.map((item) => (
             <article className="result-card" key={item.id}>
               <div className="result-top">
                 <div>
