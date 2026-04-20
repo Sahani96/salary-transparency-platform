@@ -14,6 +14,10 @@ public class SalarySpecification {
         return (root, query, cb) -> cb.equal(root.get("status"), "APPROVED");
     }
 
+    public static Specification<SalarySubmission> isPending() {
+        return (root, query, cb) -> cb.equal(root.get("status"), "PENDING");
+    }
+
     public static Specification<SalarySubmission> hasCountry(String country) {
         return (root, query, cb) ->
                 cb.equal(cb.lower(root.get("country")), country.toLowerCase());
