@@ -24,7 +24,10 @@ async function fetchVoteCounts(results) {
   settled.forEach((r) => {
     if (r.status === "fulfilled") {
       const [id, counts] = r.value;
-      map[id] = { upvotes: counts.upvotes ?? 0, downvotes: counts.downvotes ?? 0 };
+      map[id] = {
+        upvotes: counts.upvotes ?? 0,
+        downvotes: counts.downvotes ?? 0,
+      };
     }
   });
   return map;
@@ -32,20 +35,32 @@ async function fetchVoteCounts(results) {
 
 function SearchPage({ token }) {
   const [filters, setFilters] = useState(initialFilters);
-  const [options, setOptions] = useState({ countries: [], companies: [], jobTitles: [] });
-  const [results, setResults] = useState({ results: [], totalElements: 0, totalPages: 0 });
+  const [options, setOptions] = useState({
+    countries: [],
+    companies: [],
+    jobTitles: [],
+  });
+  const [results, setResults] = useState({
+    results: [],
+    totalElements: 0,
+    totalPages: 0,
+  });
   const [voteCounts, setVoteCounts] = useState({});
+  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
   const load = async (nextFilters = filters) => {
+    setLoading(true);
+    setMessage("");
     try {
       const response = await api.search(nextFilters);
       setResults(response);
-      setMessage("");
       const counts = await fetchVoteCounts(response.results ?? []);
       setVoteCounts(counts);
     } catch (error) {
       setMessage(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -55,13 +70,25 @@ function SearchPage({ token }) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const update = (event) => {
-    const nextFilters = { ...filters, [event.target.name]: event.target.value, page: 0 };
+    const nextFilters = {
+      ...filters,
+      [event.target.name]: event.target.value,
+      page: 0,
+    };
     setFilters(nextFilters);
   };
 
   const submit = (event) => {
     event.preventDefault();
-    load(filters);
+    const reset = { ...filters, page: 0 };
+    setFilters(reset);
+    load(reset);
+  };
+
+  const goToPage = (newPage) => {
+    const nextFilters = { ...filters, page: newPage };
+    setFilters(nextFilters);
+    load(nextFilters);
   };
 
   const castVote = async (submissionId, voteType) => {
@@ -74,12 +101,18 @@ function SearchPage({ token }) {
       const counts = await api.getVoteCounts(submissionId);
       setVoteCounts((prev) => ({
         ...prev,
-        [submissionId]: { upvotes: counts.upvotes ?? 0, downvotes: counts.downvotes ?? 0 },
+        [submissionId]: {
+          upvotes: counts.upvotes ?? 0,
+          downvotes: counts.downvotes ?? 0,
+        },
       }));
     } catch (error) {
       setMessage(error.message);
     }
   };
+
+  const { page, size } = filters;
+  const { totalElements, totalPages } = results;
 
   return (
     <section className="panel">
@@ -91,23 +124,44 @@ function SearchPage({ token }) {
       <form className="form-grid compact" onSubmit={submit}>
         <label>
           Country
-          <input list="countries" name="country" value={filters.country} onChange={update} />
+          <input
+            list="countries"
+            name="country"
+            value={filters.country}
+            onChange={update}
+          />
           <datalist id="countries">
-            {options.countries?.map((value) => <option key={value} value={value} />)}
+            {options.countries?.map((value) => (
+              <option key={value} value={value} />
+            ))}
           </datalist>
         </label>
         <label>
           Company
-          <input list="companies" name="company" value={filters.company} onChange={update} />
+          <input
+            list="companies"
+            name="company"
+            value={filters.company}
+            onChange={update}
+          />
           <datalist id="companies">
-            {options.companies?.map((value) => <option key={value} value={value} />)}
+            {options.companies?.map((value) => (
+              <option key={value} value={value} />
+            ))}
           </datalist>
         </label>
         <label>
           Job title
-          <input list="jobTitles" name="role" value={filters.role} onChange={update} />
+          <input
+            list="jobTitles"
+            name="role"
+            value={filters.role}
+            onChange={update}
+          />
           <datalist id="jobTitles">
-            {options.jobTitles?.map((value) => <option key={value} value={value} />)}
+            {options.jobTitles?.map((value) => (
+              <option key={value} value={value} />
+            ))}
           </datalist>
         </label>
         <label>
@@ -116,11 +170,36 @@ function SearchPage({ token }) {
         </label>
         <label>
           Min salary
-          <input name="minSalary" type="number" value={filters.minSalary} onChange={update} />
+          <input
+            name="minSalary"
+            type="number"
+            value={filters.minSalary}
+            onChange={update}
+          />
         </label>
         <label>
           Max salary
-          <input name="maxSalary" type="number" value={filters.maxSalary} onChange={update} />
+          <input
+            name="maxSalary"
+            type="number"
+            value={filters.maxSalary}
+            onChange={update}
+          />
+        </label>
+        <label>
+          Sort by
+          <select name="sortBy" value={filters.sortBy} onChange={update}>
+            <option value="submittedAt">Date submitted</option>
+            <option value="baseSalary">Base salary</option>
+            <option value="yearsOfExperience">Years of experience</option>
+          </select>
+        </label>
+        <label>
+          Order
+          <select name="sortDir" value={filters.sortDir} onChange={update}>
+            <option value="desc">Descending</option>
+            <option value="asc">Ascending</option>
+          </select>
         </label>
         <button type="submit">Apply filters</button>
       </form>
@@ -128,42 +207,83 @@ function SearchPage({ token }) {
       {message && <p className="feedback">{message}</p>}
 
       <div className="results-header">
-        <strong>{results.totalElements || 0} matching records</strong>
+        <strong>
+          {loading ? "Searching…" : `${totalElements.toLocaleString()} matching records`}
+        </strong>
+        {totalPages > 1 && (
+          <span className="page-indicator">
+            Page {page + 1} of {totalPages}
+          </span>
+        )}
       </div>
 
-      <div className="card-list">
-        {results.results?.map((item) => (
-          <article className="result-card" key={item.id}>
-            <div className="result-top">
-              <div>
-                <h3>{item.jobTitle}</h3>
-                <p>{item.company} • {item.country}{item.city ? ` • ${item.city}` : ""}</p>
+      {!loading && (
+        <div className="card-list">
+          {results.results?.map((item) => (
+            <article className="result-card" key={item.id}>
+              <div className="result-top">
+                <div>
+                  <h3 className="card-title">{item.jobTitle}</h3>
+                  <p className="card-sub">
+                    {item.company} &bull; {item.country}
+                    {item.city ? ` \u2022 ${item.city}` : ""}
+                  </p>
+                </div>
+                <div className="salary-pill">
+                  {item.currency} {Number(item.baseSalary).toLocaleString()}
+                </div>
               </div>
-              <div className="salary-pill">{item.currency} {item.baseSalary}</div>
-            </div>
-            <p className="muted">{item.experienceLevel} • {item.yearsOfExperience} years • {item.employmentType}</p>
-            <p>{item.techStack || "Tech stack not specified"}</p>
-            <div className="vote-row">
-              <button
-                type="button"
-                className="vote-btn vote-btn-up"
-                onClick={() => castVote(item.id, "UPVOTE")}
-                title="Upvote"
-              >
-                ▲ {voteCounts[item.id]?.upvotes ?? 0}
-              </button>
-              <button
-                type="button"
-                className="vote-btn vote-btn-down"
-                onClick={() => castVote(item.id, "DOWNVOTE")}
-                title="Downvote"
-              >
-                ▼ {voteCounts[item.id]?.downvotes ?? 0}
-              </button>
-            </div>
-          </article>
-        ))}
-      </div>
+              <p className="card-meta">
+                {item.experienceLevel} &bull; {item.yearsOfExperience} yrs &bull;{" "}
+                {item.employmentType}
+              </p>
+              {item.techStack && (
+                <p className="card-tech">{item.techStack}</p>
+              )}
+              <div className="vote-row">
+                <button
+                  type="button"
+                  className="vote-btn vote-btn-up"
+                  onClick={() => castVote(item.id, "UPVOTE")}
+                  title="Upvote"
+                >
+                  ▲ {voteCounts[item.id]?.upvotes ?? 0}
+                </button>
+                <button
+                  type="button"
+                  className="vote-btn vote-btn-down"
+                  onClick={() => castVote(item.id, "DOWNVOTE")}
+                  title="Downvote"
+                >
+                  ▼ {voteCounts[item.id]?.downvotes ?? 0}
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+
+      {!loading && totalPages > 1 && (
+        <div className="pagination">
+          <button
+            type="button"
+            disabled={page === 0}
+            onClick={() => goToPage(page - 1)}
+          >
+            ← Previous
+          </button>
+          <span>
+            {page + 1} / {totalPages}
+          </span>
+          <button
+            type="button"
+            disabled={page >= totalPages - 1}
+            onClick={() => goToPage(page + 1)}
+          >
+            Next →
+          </button>
+        </div>
+      )}
     </section>
   );
 }
