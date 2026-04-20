@@ -49,11 +49,13 @@ function SearchPage({ token }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
+  const isLoggedIn = Boolean(token);
+
   const load = async (nextFilters = filters) => {
     setLoading(true);
     setMessage("");
     try {
-      const response = await api.search(nextFilters);
+      const response = await api.search(nextFilters, token);
       setResults(response);
       const counts = await fetchVoteCounts(response.results ?? []);
       setVoteCounts(counts);
@@ -117,8 +119,14 @@ function SearchPage({ token }) {
   return (
     <section className="panel">
       <div className="panel-heading">
-        <p className="eyebrow">Search Service</p>
-        <h2>Approved salary submissions</h2>
+        <h2>
+          Search Salary Records
+        </h2>
+        {isLoggedIn && (
+          <p className="search-scope-note">
+            You are logged in — showing both <span className="badge-approved">Approved</span> and <span className="badge-pending">Pending</span> records.
+          </p>
+        )}
       </div>
 
       <form className="form-grid compact" onSubmit={submit}>
@@ -223,7 +231,14 @@ function SearchPage({ token }) {
             <article className="result-card" key={item.id}>
               <div className="result-top">
                 <div>
-                  <h3 className="card-title">{item.jobTitle}</h3>
+                  <h3 className="card-title">
+                    {item.jobTitle}
+                    {isLoggedIn && item.status && (
+                      <span className={`status-badge ${item.status === "APPROVED" ? "badge-approved" : "badge-pending"}`}>
+                        {item.status}
+                      </span>
+                    )}
+                  </h3>
                   <p className="card-sub">
                     {item.company} &bull; {item.country}
                     {item.city ? ` \u2022 ${item.city}` : ""}
@@ -238,14 +253,19 @@ function SearchPage({ token }) {
                 {item.employmentType}
               </p>
               {item.techStack && (
-                <p className="card-tech">{item.techStack}</p>
+                <div className="card-tech-pills">
+                  {item.techStack.split(",").map((t) => t.trim()).filter(Boolean).map((t) => (
+                    <span key={t} className="card-tech-chip">{t}</span>
+                  ))}
+                </div>
               )}
               <div className="vote-row">
                 <button
                   type="button"
                   className="vote-btn vote-btn-up"
                   onClick={() => castVote(item.id, "UPVOTE")}
-                  title="Upvote"
+                  title={token ? "Upvote" : "Log in to vote"}
+                  disabled={!token}
                 >
                   ▲ {voteCounts[item.id]?.upvotes ?? 0}
                 </button>
@@ -253,10 +273,14 @@ function SearchPage({ token }) {
                   type="button"
                   className="vote-btn vote-btn-down"
                   onClick={() => castVote(item.id, "DOWNVOTE")}
-                  title="Downvote"
+                  title={token ? "Downvote" : "Log in to vote"}
+                  disabled={!token}
                 >
                   ▼ {voteCounts[item.id]?.downvotes ?? 0}
                 </button>
+                {!token && (
+                  <a href="#/login" className="vote-login-hint">Log in to vote</a>
+                )}
               </div>
             </article>
           ))}
