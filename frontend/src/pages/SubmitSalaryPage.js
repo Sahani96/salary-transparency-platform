@@ -1,43 +1,81 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
 
-const initialForm = {
+const CURRENCIES = ["USD", "LKR", "EUR", "GBP", "AUD", "CAD", "SGD", "INR", "JPY", "AED"];
+const EXPERIENCE_LEVELS = ["JUNIOR", "MID", "SENIOR", "LEAD", "PRINCIPAL"];
+const EMPLOYMENT_TYPES = ["FULL_TIME", "PART_TIME", "CONTRACT", "FREELANCE"];
+
+const EMPTY_FORM = {
   jobTitle: "",
   company: "",
   country: "",
   city: "",
-  experienceLevel: "MID",
-  yearsOfExperience: 3,
+  yearsOfExperience: "",
   baseSalary: "",
-  currency: "LKR",
-  employmentType: "FULL_TIME",
+  currency: "USD",
+  experienceLevel: "",
+  employmentType: "",
   anonymize: false,
-  techStack: "",
 };
 
-function SubmitSalaryPage() {
-  const [form, setForm] = useState(initialForm);
-  const [created, setCreated] = useState(null);
-  const [message, setMessage] = useState("");
+function SubmitSalaryPage({ token }) {
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [techPills, setTechPills] = useState([]);
+  const [techInput, setTechInput] = useState("");
+  const [jobTitles, setJobTitles] = useState([]);
+  const [message, setMessage] = useState({ text: "", type: "" });
+  const [loading, setLoading] = useState(false);
+  const techInputRef = useRef(null);
 
-  const update = (event) => {
-    const { name, value, type, checked } = event.target;
-    setForm((current) => ({ ...current, [name]: type === "checkbox" ? checked : value }));
+  useEffect(() => {
+    api.searchFilters()
+      .then((data) => setJobTitles(data.jobTitles || []))
+      .catch(() => undefined);
+  }, []);
+
+  const update = (e) => {
+    const { name, value, type, checked } = e.target;
+    setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
   };
 
-  const submit = async (event) => {
-    event.preventDefault();
+  const addTechPill = () => {
+    const tag = techInput.trim();
+    if (tag && !techPills.includes(tag)) {
+      setTechPills((prev) => [...prev, tag]);
+    }
+    setTechInput("");
+  };
+
+  const onTechKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addTechPill();
+    } else if (e.key === "Backspace" && techInput === "" && techPills.length > 0) {
+      setTechPills((prev) => prev.slice(0, -1));
+    }
+  };
+
+  const removePill = (tag) => setTechPills((prev) => prev.filter((p) => p !== tag));
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage({ text: "", type: "" });
     try {
-      const response = await api.submitSalary({
+      await api.submitSalary({
         ...form,
         yearsOfExperience: Number(form.yearsOfExperience),
         baseSalary: Number(form.baseSalary),
-      });
-      setCreated(response);
-      setMessage("Submission created. It starts as PENDING until the community verifies it.");
-      setForm(initialForm);
+        techStack: techPills.join(", "),
+      }, token);
+      setMessage({ text: "Submission received! Your salary record is under review. Thank you for contributing.", type: "success" });
+      setForm(EMPTY_FORM);
+      setTechPills([]);
+      setTechInput("");
     } catch (error) {
-      setMessage(error.message);
+      setMessage({ text: error.message, type: "error" });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -45,75 +83,126 @@ function SubmitSalaryPage() {
     <section className="panel">
       <div className="panel-heading">
         <p className="eyebrow">Salary Service</p>
-        <h2>Submit an anonymous salary record</h2>
+        <h2>Submit your salary</h2>
+        <p className="submit-intro">
+          Submissions are completely anonymous. No account is needed.
+        </p>
       </div>
 
       <form className="form-grid" onSubmit={submit}>
+        {/* Job title with suggestions */}
         <label>
           Job title
-          <input name="jobTitle" value={form.jobTitle} onChange={update} required />
+          <input
+            list="job-title-suggestions"
+            name="jobTitle"
+            value={form.jobTitle}
+            onChange={update}
+            placeholder="e.g. Software Engineer"
+            required
+          />
+          <datalist id="job-title-suggestions">
+            {jobTitles.map((t) => <option key={t} value={t} />)}
+          </datalist>
         </label>
+
         <label>
           Company
-          <input name="company" value={form.company} onChange={update} required />
+          <input name="company" value={form.company} onChange={update} placeholder="e.g. Sysco Labs" required />
         </label>
+
         <label>
           Country
-          <input name="country" value={form.country} onChange={update} required />
+          <input name="country" value={form.country} onChange={update} placeholder="e.g. Sri Lanka" required />
         </label>
+
         <label>
           City
-          <input name="city" value={form.city} onChange={update} />
+          <input name="city" value={form.city} onChange={update} placeholder="e.g. Colombo" />
         </label>
+
+        <label>
+          Years of experience
+          <input name="yearsOfExperience" type="number" min="0" max="50" value={form.yearsOfExperience} onChange={update} placeholder="e.g. 3" required />
+        </label>
+
+        <label>
+          Base salary
+          <input name="baseSalary" type="number" min="0" value={form.baseSalary} onChange={update} placeholder="e.g. 120000" required />
+        </label>
+
+        {/* Currency dropdown */}
+        <label>
+          Currency
+          <select name="currency" value={form.currency} onChange={update} required>
+            {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </label>
+
+        {/* Experience level dropdown */}
         <label>
           Experience level
           <select name="experienceLevel" value={form.experienceLevel} onChange={update}>
-            <option>JUNIOR</option>
-            <option>MID</option>
-            <option>SENIOR</option>
-            <option>LEAD</option>
-            <option>PRINCIPAL</option>
+            <option value="">— Select level —</option>
+            {EXPERIENCE_LEVELS.map((l) => (
+              <option key={l} value={l}>{l.charAt(0) + l.slice(1).toLowerCase()}</option>
+            ))}
           </select>
         </label>
-        <label>
-          Years of experience
-          <input name="yearsOfExperience" type="number" min="0" value={form.yearsOfExperience} onChange={update} required />
-        </label>
-        <label>
-          Base salary
-          <input name="baseSalary" type="number" min="0" value={form.baseSalary} onChange={update} required />
-        </label>
-        <label>
-          Currency
-          <input name="currency" value={form.currency} onChange={update} required />
-        </label>
+
+        {/* Employment type dropdown */}
         <label>
           Employment type
           <select name="employmentType" value={form.employmentType} onChange={update}>
-            <option>FULL_TIME</option>
-            <option>PART_TIME</option>
-            <option>CONTRACT</option>
-            <option>FREELANCE</option>
+            <option value="">— Select type —</option>
+            {EMPLOYMENT_TYPES.map((t) => (
+              <option key={t} value={t}>{t.replace("_", " ").charAt(0) + t.replace("_", " ").slice(1).toLowerCase()}</option>
+            ))}
           </select>
         </label>
-        <label className="checkbox">
-          <input name="anonymize" type="checkbox" checked={form.anonymize} onChange={update} />
-          Hide identity details in the final record
-        </label>
+
+        {/* Tech stack pill input */}
         <label className="span-2">
           Tech stack
-          <textarea name="techStack" rows="4" value={form.techStack} onChange={update} />
+          <div className="pill-input-box" onClick={() => techInputRef.current?.focus()}>
+            {techPills.map((tag) => (
+              <span key={tag} className="tech-pill">
+                {tag}
+                <button type="button" className="pill-remove" onClick={() => removePill(tag)} aria-label={`Remove ${tag}`}>×</button>
+              </span>
+            ))}
+            <input
+              ref={techInputRef}
+              className="pill-text-input"
+              value={techInput}
+              onChange={(e) => setTechInput(e.target.value)}
+              onKeyDown={onTechKeyDown}
+              onBlur={addTechPill}
+              placeholder={techPills.length === 0 ? "Type a technology and press Enter…" : ""}
+            />
+          </div>
+          <span className="field-hint">Press Enter to add each technology (e.g. React, Java, PostgreSQL)</span>
         </label>
-        <button type="submit">Submit record</button>
+
+        <button className="span-2 submit-btn" type="submit" disabled={loading}>
+          {loading ? (
+            <span className="submit-btn-inner">
+              <span className="submit-spinner" />
+              Submitting…
+            </span>
+          ) : (
+            <span className="submit-btn-inner">
+              Submit salary record
+              <span className="submit-arrow">→</span>
+            </span>
+          )}
+        </button>
       </form>
 
-      {message && <p className="feedback">{message}</p>}
-      {created && (
-        <div className="submission-preview">
-          <strong>Created submission</strong>
-          <p>ID: {created.id}</p>
-          <p>Status: {created.status}</p>
-        </div>
+      {message.text && (
+        <p className={`feedback${message.type === "error" ? " error" : " success"}`}>
+          {message.text}
+        </p>
       )}
     </section>
   );

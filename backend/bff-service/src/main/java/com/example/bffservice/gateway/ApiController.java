@@ -57,7 +57,7 @@ public class ApiController {
 
     @GetMapping("/salaries/{id}")
     public ResponseEntity<String> getSalary(@PathVariable UUID id) {
-        return gatewayService.get(gatewayService.salaryServiceUrl() + "/submissions/" + id, null);
+        return gatewayService.get(gatewayService.salaryServiceUrl() + "/api/submissions/" + id, null);
     }
 
     @PostMapping("/votes")
@@ -92,38 +92,38 @@ public class ApiController {
     @GetMapping("/search")
     public ResponseEntity<String> search(HttpServletRequest request) {
         String query = request.getQueryString();
-        String url = gatewayService.searchServiceUrl() + "/search" + (query == null ? "" : "?" + query);
+        String url = gatewayService.searchServiceUrl() + "/api/search" + (query == null ? "" : "?" + query);
         return gatewayService.get(url, null);
     }
 
     @GetMapping("/search/filters")
     public ResponseEntity<String> searchFilters() {
-        return gatewayService.get(gatewayService.searchServiceUrl() + "/search/filters", null);
+        return gatewayService.get(gatewayService.searchServiceUrl() + "/api/search/filters", null);
     }
 
     @GetMapping("/stats/summary")
     public ResponseEntity<String> statsSummary() {
-        return gatewayService.get(gatewayService.statsServiceUrl() + "/stats/summary", null);
+        return gatewayService.get(gatewayService.statsServiceUrl() + "/api/stats/summary", null);
     }
 
     @GetMapping("/stats/by-role")
     public ResponseEntity<String> statsByRole() {
-        return gatewayService.get(gatewayService.statsServiceUrl() + "/stats/by-role", null);
+        return gatewayService.get(gatewayService.statsServiceUrl() + "/api/stats/by-role", null);
     }
 
     @GetMapping("/stats/by-company")
     public ResponseEntity<String> statsByCompany() {
-        return gatewayService.get(gatewayService.statsServiceUrl() + "/stats/by-company", null);
+        return gatewayService.get(gatewayService.statsServiceUrl() + "/api/stats/by-company", null);
     }
 
     @GetMapping("/stats/by-country")
     public ResponseEntity<String> statsByCountry() {
-        return gatewayService.get(gatewayService.statsServiceUrl() + "/stats/by-country", null);
+        return gatewayService.get(gatewayService.statsServiceUrl() + "/api/stats/by-country", null);
     }
 
     @GetMapping("/stats/by-level")
     public ResponseEntity<String> statsByLevel() {
-        return gatewayService.get(gatewayService.statsServiceUrl() + "/stats/by-level", null);
+        return gatewayService.get(gatewayService.statsServiceUrl() + "/api/stats/by-level", null);
     }
 
     @GetMapping("/stats/compare")
@@ -131,7 +131,7 @@ public class ApiController {
             @RequestParam String groupBy,
             @RequestParam String values
     ) {
-        String url = gatewayService.statsServiceUrl() + "/stats/compare?groupBy=" + groupBy + "&values=" + values;
+        String url = gatewayService.statsServiceUrl() + "/api/stats/compare?groupBy=" + groupBy + "&values=" + values;
         return gatewayService.get(url, null);
     }
 }

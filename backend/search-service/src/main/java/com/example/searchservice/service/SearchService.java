@@ -34,7 +34,7 @@ public class SearchService {
                                   int page, int size, String sortBy, String sortDir) {
 
         // Build dynamic specification — always filter by APPROVED status
-        Specification<SalarySubmission> spec = Specification.where(SalarySpecification.isApproved());
+        Specification<SalarySubmission> spec = Specification.where(SalarySpecification.isApproved()).or(SalarySpecification.isPending());
 
         if (country != null && !country.isBlank()) {
             spec = spec.and(SalarySpecification.hasCountry(country));

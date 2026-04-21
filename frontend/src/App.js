@@ -10,6 +10,7 @@ const routes = {
   "#/submit": "submit",
   "#/stats": "stats",
   "#/search": "search",
+  "#/login": "login",
 };
 
 function getRoute() {
@@ -55,9 +56,10 @@ function App() {
   const logout = () => {
     setSession(null);
     window.localStorage.removeItem("salary-platform-session");
+    window.location.hash = "#/search";
   };
 
-  if (!session) {
+  if (route === "login" && !session) {
     return (
       <div className="login-shell">
         <div className="login-brand">
@@ -77,9 +79,15 @@ function App() {
       <header className="topbar">
         <span className="topbar-brand">Tech Salary Transparency Platform</span>
         <div className="topbar-session">
-          <strong>{session.username}</strong>
-          <span>{session.email}</span>
-          <button type="button" onClick={logout}>Log out</button>
+          {session ? (
+            <>
+              <strong>{session.username}</strong>
+              <span>{session.email}</span>
+              <button type="button" onClick={logout}>Log out</button>
+            </>
+          ) : (
+            <a href="#/login" className="topbar-login-btn">Log in to vote</a>
+          )}
         </div>
       </header>
 
@@ -92,9 +100,12 @@ function App() {
       </aside>
 
       <main className="content">
-        {route === "submit" && <SubmitSalaryPage token={session.token} />}
+        {route === "submit" && <SubmitSalaryPage token={session?.token} />}
         {route === "stats" && <StatsPage />}
-        {route === "search" && <SearchPage token={session.token} />}
+        {route === "search" && <SearchPage token={session?.token} />}
+        {route === "login" && session && (
+          <SearchPage token={session.token} />
+        )}
       </main>
     </div>
   );
