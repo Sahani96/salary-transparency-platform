@@ -41,8 +41,7 @@ function LoginPage({ onAuthenticated }) {
         <button type="button" className={mode === "login" ? "active" : ""} onClick={() => setMode("login")}>Login</button>
         <button type="button" className={mode === "signup" ? "active" : ""} onClick={() => setMode("signup")}>Signup</button>
       </div>
-
-      <form className="form-grid" onSubmit={submit}>
+      <form className="form-grid form-stack" onSubmit={submit}>
         <label>
           Username
           <input name="username" value={form.username} onChange={updateField} required />
