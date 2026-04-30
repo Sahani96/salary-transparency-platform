@@ -250,6 +250,11 @@
   grid-column: span 2;
 }
 
+.form-stack {
+  grid-template-columns: 1fr;
+  margin-top: 20px;
+}
+
 label.checkbox {
   display: flex;
   flex-direction: row;
