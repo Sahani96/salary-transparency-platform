@@ -42,45 +42,43 @@ function StatsPage() {
       {loading && <p className="stats-loading">Loading statistics…</p>}
 
       {!loading && summary && (
-        <div className="metric-grid">
-          <div className="metric-card">
-            <span>Total</span>
-            <strong>{summary.totalSubmissions.toLocaleString()}</strong>
+        <div className="metric-section">
+          <div className="metric-row-primary">
+            <div className="metric-card-hero">
+              <span className="metric-label">Total Submissions</span>
+              <strong className="metric-value">{summary.totalSubmissions.toLocaleString()}</strong>
+            </div>
+            <div className="metric-card-hero">
+              <span className="metric-label">Average Salary</span>
+              <strong className="metric-value">{Number(summary.averageSalary).toLocaleString()}</strong>
+            </div>
+            <div className="metric-card-hero">
+              <span className="metric-label">Median Salary</span>
+              <strong className="metric-value">{Number(summary.medianSalary).toLocaleString()}</strong>
+            </div>
           </div>
-          <div className="metric-card">
-            <span>Average</span>
-            <strong>{summary.averageSalary.toLocaleString()}</strong>
-          </div>
-          <div className="metric-card">
-            <span>Median</span>
-            <strong>{summary.medianSalary.toLocaleString()}</strong>
-          </div>
-          <div className="metric-card">
-            <span>P25</span>
-            <strong>{summary.p25Salary.toLocaleString()}</strong>
-          </div>
-          <div className="metric-card">
-            <span>P75</span>
-            <strong>{summary.p75Salary.toLocaleString()}</strong>
-          </div>
-          <div className="metric-card">
-            <span>P90</span>
-            <strong>{summary.p90Salary.toLocaleString()}</strong>
-          </div>
-          <div className="metric-card">
-            <span>Min</span>
-            <strong>{summary.minSalary.toLocaleString()}</strong>
-          </div>
-          <div className="metric-card">
-            <span>Max</span>
-            <strong>{summary.maxSalary.toLocaleString()}</strong>
+
+          <p className="metric-group-label">Distribution</p>
+          <div className="metric-row-secondary">
+            {[
+              { label: "25th Percentile", value: summary.p25Salary },
+              { label: "75th Percentile", value: summary.p75Salary },
+              { label: "90th Percentile", value: summary.p90Salary },
+              { label: "Minimum",          value: summary.minSalary },
+              { label: "Maximum",          value: summary.maxSalary },
+            ].map(({ label, value }) => (
+              <div key={label} className="metric-chip">
+                <span className="chip-label">{label}</span>
+                <strong className="chip-value">{Number(value).toLocaleString()}</strong>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
       {!loading && (
         <div className="stats-columns">
-          <div>
+          <div className="stats-column">
             <h3>By role</h3>
             <div className="mini-table">
               {roleStats.length === 0 && <p className="stats-empty">No data</p>}
@@ -93,7 +91,7 @@ function StatsPage() {
             </div>
           </div>
 
-          <div>
+          <div className="stats-column">
             <h3>By country</h3>
             <div className="mini-table">
               {countryStats.length === 0 && <p className="stats-empty">No data</p>}
@@ -106,7 +104,7 @@ function StatsPage() {
             </div>
           </div>
 
-          <div>
+          <div className="stats-column">
             <h3>By company</h3>
             <div className="mini-table">
               {companyStats.length === 0 && <p className="stats-empty">No data</p>}
@@ -119,7 +117,7 @@ function StatsPage() {
             </div>
           </div>
 
-          <div>
+          <div className="stats-column">
             <h3>By experience level</h3>
             <div className="mini-table">
               {levelStats.length === 0 && <p className="stats-empty">No data</p>}

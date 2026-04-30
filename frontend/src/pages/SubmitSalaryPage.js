@@ -79,6 +79,13 @@ function SubmitSalaryPage({ token }) {
     }
   };
 
+  const isFormValid =
+    form.jobTitle.trim() &&
+    form.company.trim() &&
+    form.country.trim() &&
+    form.yearsOfExperience !== "" &&
+    form.baseSalary !== "";
+
   return (
     <section className="panel">
       <div className="panel-heading">
@@ -184,7 +191,7 @@ function SubmitSalaryPage({ token }) {
           <span className="field-hint">Press Enter to add each technology (e.g. React, Java, PostgreSQL)</span>
         </label>
 
-        <button className="span-2 submit-btn" type="submit" disabled={loading}>
+        <button className="span-2 submit-btn" type="submit" disabled={loading || !isFormValid}>
           {loading ? (
             <span className="submit-btn-inner">
               <span className="submit-spinner" />
@@ -193,7 +200,6 @@ function SubmitSalaryPage({ token }) {
           ) : (
             <span className="submit-btn-inner">
               Submit salary record
-              <span className="submit-arrow">→</span>
             </span>
           )}
         </button>
